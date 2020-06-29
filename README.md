@@ -8,11 +8,11 @@ reg.py registers two images by translation.  Images should be TIF files and plac
 Generating docker image:
 
 1. Ensure the following files are in a folder:
-
+```
 Dockerfile
 environment.yml
 reg.py
-
+```
 2. Build the docker image in that folder:
 ```
 docker build --tag reg .
@@ -40,10 +40,11 @@ Other parts of the filename appearing before these three elements can carry arbi
 Generating docker image:
 
 1. Ensure the following files are in a folder:
+```
 Dockerfile
 environment.yml
 reg_multiplex.py
-
+```
 2. Build the docker image in that folder:
 ```
 docker build --tag reg_mult .

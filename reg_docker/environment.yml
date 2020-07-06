@@ -9,5 +9,5 @@ dependencies:
   - tifffile
   - psutil
   - glob2
-prefix: /Users/altinok/anaconda3/envs/reg
+prefix: /edrn/anaconda3/envs/reg
 

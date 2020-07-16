@@ -25,6 +25,8 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 from skimage.feature import register_translation
+from skimage.color import rgb2gray
+from skimage.util import img_as_ubyte
 
 import tifffile
 import psutil
@@ -60,7 +62,7 @@ def get_max_frame_size(tif_files):
 
 
 def register_frame(im1, im2):
-    
+
     larger_dim = max(im1.shape)
     
     down_sample = larger_dim // 10000 + 1
@@ -110,6 +112,12 @@ def main(in_folder, out_folder):
     im_src = np.squeeze(im_src)
     im_dst = np.squeeze(im_dst)
 
+    # if RGB images, convert to Gray
+    if len(im_src) > 2:
+        im_src = img_as_ubyte(rgb2gray(im_src))
+    if len(im_dst) > 2:
+        im_dst = img_as_ubyte(rgb2gray(im_dst))
+
     im_src = pad_frame(im_src, mx, my)
     im_dst = pad_frame(im_dst, mx, my)
 
@@ -120,7 +128,6 @@ def main(in_folder, out_folder):
     tifffile.imwrite(tif_files[0].replace(in_folder, out_folder), data=im1)
     tifffile.imwrite(tif_files[1].replace(in_folder, out_folder), data=im2)
     
-
 if __name__ == '__main__':
     
     log_file = 'output/output.log'

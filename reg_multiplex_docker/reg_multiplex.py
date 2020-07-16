@@ -35,6 +35,8 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 from skimage.feature import register_translation
+from skimage.color import rgb2gray
+from skimage.util import img_as_ubyte
 
 import tifffile
 import glob2
@@ -70,9 +72,8 @@ def get_max_frame_size(tif_files):
     print('Max xy (output frame size):',maxx,maxy)
     print('Min xy:',minx,miny)
     print('Difference xy:',maxx-minx,maxy-miny,np.round((maxx-minx)/maxx,2),np.round((maxy-miny)/maxy,2))
-    return maxx, maxy        
-
-
+    return maxx, maxy
+    
 
 def main(in_folder, out_folder):
 
@@ -123,12 +124,18 @@ def main(in_folder, out_folder):
     for f in fix_frames:
         im = tifffile.imread(f)
         im = np.squeeze(im)
+        # if RGB images, convert to Gray
+        if len(im) > 2:
+            im = img_as_ubyte(rgb2gray(im))
         im = pad_frame(im, mx, my)
         tifffile.imwrite(f.replace('input','output'),data=im)
         
     # read fixed dapi only once
     im_fix = tifffile.imread(fix_dapi)
     im_fix = np.squeeze(im_fix)
+    # if RGB images, convert to Gray
+    if len(im_fix) > 2:
+        im_fix = img_as_ubyte(rgb2gray(im_fix))
     im_fix = pad_frame(im_fix, mx, my)
 
     # write fixed dapi frame
@@ -152,6 +159,9 @@ def main(in_folder, out_folder):
         # read the moving frame
         im_mov = tifffile.imread(mov_dapi)
         im_mov = np.squeeze(im_mov)
+        # if RGB images, convert to Gray
+        if len(im_mov) > 2:
+            im_mov = img_as_ubyte(rgb2gray(im_mov))
         im_mov = pad_frame(im_mov, mx, my)
         im_mov_small = im_mov[0::down_sample, 0::down_sample]
         
@@ -173,6 +183,9 @@ def main(in_folder, out_folder):
         for f in mov_frames:
             im = tifffile.imread(f)
             im = np.squeeze(im)
+            # if RGB images, convert to Gray
+            if len(im) > 2:
+                im = img_as_ubyte(rgb2gray(im))
             im = pad_frame(im, mx, my)
             im = np.roll(im, shift.astype(int), [0,1])
             print('Writing:', im.shape, f.replace('input','output'))

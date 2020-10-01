@@ -43,6 +43,7 @@ import glob2
 import os
 import sys
 import psutil
+import json
 
 
 def pad_frame(f1, mx, my):
@@ -75,6 +76,17 @@ def get_max_frame_size(tif_files):
     return maxx, maxy
     
 
+def crop_roi(f, t, l, h, w):
+    buffer = 100
+    if (t-buffer > 0) and (l-buffer > 0) and \
+       (t+h+buffer < f.shape[0]) and (l+w+buffer < f.shape[1]) and \
+        h > 0 and w > 0:
+        crop = f[t-buffer:t+h+buffer, l-buffer:l+w+buffer]
+    else:
+        crop = f
+    return crop
+
+
 def main(in_folder, out_folder):
 
     # scan all files for largest images size
@@ -89,8 +101,7 @@ def main(in_folder, out_folder):
     if (tsz1 + tsz2) > mem.available * 0.75:
         print('Not enough memory to read two frames.')
         exit()
-    
-    
+
     # show round and file info
     rounds = list(set([os.path.basename(x).split('.')[-3] for x in tif_files]))
     max_rounds = max(rounds)
@@ -113,8 +124,25 @@ def main(in_folder, out_folder):
     
     # largest image size
     mx,my = get_max_frame_size(tif_files)
-    
+
+    # load bounding box coords
+    try:
+        with open(os.path.join(in_folder,'manifest.json'), 'r') as fr:
+            bbox = json.load(fr)['bounding_box'][0]
+        top = bbox['top']
+        left = bbox['left']
+        height = bbox['height']
+        width = bbox['width']
+    except:
+        top = 0
+        left = 0
+        height = -1
+        width = -1
+    print('ROI: ', top, left, height, width)
+
     # adjust all histograms of all frames might help
+    # we encountered changing focus issues in slides:
+    # this should be guided by metadata from original slides
     
     # write fixed files
     fix_dapi = dapis.pop()
@@ -128,6 +156,7 @@ def main(in_folder, out_folder):
         if len(im) > 2:
             im = img_as_ubyte(rgb2gray(im))
         im = pad_frame(im, mx, my)
+        im = crop_roi(im, top, left, height, width)
         tifffile.imwrite(f.replace('input','output'),data=im)
         
     # read fixed dapi only once
@@ -137,13 +166,14 @@ def main(in_folder, out_folder):
     if len(im_fix) > 2:
         im_fix = img_as_ubyte(rgb2gray(im_fix))
     im_fix = pad_frame(im_fix, mx, my)
+    im_fix = crop_roi(im_fix, top, left, height, width)
 
     # write fixed dapi frame
     tifffile.imwrite(fix_dapi.replace('input','output'),data=im_fix)
     
     down_sample = max(im_fix.shape) // 10000 + 1    
     im_fix_small = im_fix[0::down_sample, 0::down_sample]
-    
+
     print('Fixed DAPI frame:', im_fix.shape, fix_dapi)
     print('Down sample factor:', down_sample, '\n')
 
@@ -163,6 +193,8 @@ def main(in_folder, out_folder):
         if len(im_mov) > 2:
             im_mov = img_as_ubyte(rgb2gray(im_mov))
         im_mov = pad_frame(im_mov, mx, my)
+        im_mov = crop_roi(im_mov, top, left, height, width)
+
         im_mov_small = im_mov[0::down_sample, 0::down_sample]
         
         print('Registering round:', mov_id)
@@ -187,14 +219,15 @@ def main(in_folder, out_folder):
             if len(im) > 2:
                 im = img_as_ubyte(rgb2gray(im))
             im = pad_frame(im, mx, my)
+            im = crop_roi(im, top, left, height, width)
             im = np.roll(im, shift.astype(int), [0,1])
             print('Writing:', im.shape, f.replace('input','output'))
             tifffile.imwrite(f.replace('input','output'), data=im)
 
     # print errors
-    print('\nErrors:')
+    print('\nDisplacements:')
     for k, v in {k: v for k, v in sorted(errors.items(), key=lambda item: item[1], reverse=True)}.items():
-        print('Round', k, 'error {:.2f}'.format(v))
+        print('Round', k, 'displacement: {:.2f}'.format(v))
 
     
 
@@ -207,3 +240,4 @@ if __name__ == '__main__':
 
     main('input/','output/')
 
+ 

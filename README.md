@@ -25,7 +25,7 @@ docker run --rm -d -v /path/to/output:/usr/src/app/output -v /path/to/input:/usr
 
 ## reg_multiplex.py
 
-**reg_multiplex.py** registers frames of a **muliplexed tissue image**.  A multiplexed image consists of multiple rounds of imaging.  Images are saved as TIF files.  Each round has a DAPI frame along with several other non-DAPI frames.  Frames are assumed to be registered within each round, however, rounds may need to be translated across rounds.  **reg_multiplex.py** translates all DAPI frames against a randomly chosen anchor frame.
+**reg_multiplex.py** registers frames of a **muliplexed tissue image**.  A multiplexed image consists of multiple rounds of imaging.  Images are saved as TIF files.  RGB images are converted to gray images by the script; no color information is used in translation.  Each round has a DAPI frame along with several other non-DAPI frames.  Frames are assumed to be registered within each round, however, rounds may need to be translated across rounds.  **reg_multiplex.py** translates all DAPI frames against a randomly chosen anchor frame.
 
 Rounds are identified by the integer ROUND_ID in the filename.  ROUND_ID is found prior to the filetype and marker indicator, which are separated by dot (.).  For example, the following filename
 
